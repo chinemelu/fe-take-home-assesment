@@ -1,7 +1,161 @@
 <template>
-  <div class="home">
-    <h1>Home</h1>
-    <p>Welcome to your Vue.js app!</p>
-  </div>
+    <div class="text-center">
+      <FileUploader></FileUploader>
+
+      <button class="rounded-full px-12 py-2 text-white bg-black mt-4">Upload</button>
+    </div>
 </template>
-<script></script>
+
+<script lang="ts" setup>
+interface objType {
+  'academyId':  string;
+  'batteryLevel': number;
+  'employeeId': string;
+  'serialNumber': string;
+  'timestamp': string;
+}
+
+interface index {
+  [key: string]: objType[];
+}
+
+interface index2 {
+  [key: number]: objType[];
+}
+
+interface index3 {
+  [key: string]: index;
+}
+
+
+import { onMounted, ref } from 'vue';
+import FileUploader from '@/components/FileUploader.vue';
+import batteryJSON from '../data/battery.json'
+import dayjs from 'dayjs';
+
+
+const conversion = ref(24);
+const result = {} as index;
+const obj = {} as index;
+const data: objType[] =  batteryJSON.data;
+const devicesAndSchools = [];
+const overallResult = {} as index3;
+
+onMounted(() => {
+  const uniqueNumbers = new Set<string>();
+
+  // const obj = {} as index;
+
+  data.forEach(t => {
+    if (!uniqueNumbers.has(t.academyId)) {
+      uniqueNumbers.add(t.academyId);
+      obj[t.academyId] = [];
+    }
+  });
+
+  data.forEach(t => {
+    if (obj[t.academyId]) {
+      obj[t.academyId].push(t);
+    }
+  });
+
+  const finalDeviceResults = {} as index2;
+  // const finalSchoolResults = {} as index2;
+
+
+  uniqueNumbers.forEach(num => {
+    finalDeviceResults[num] = extractDistinctDevicesFromSchools(num, obj[num]);
+    // finalSchoolResults[num] = calculateSchoolData();
+  });
+
+});
+
+
+const extractDistinctDevicesFromSchools = (academyId: string, deviceData: objType[]) => {
+  const uniqueDevices = new Set<string>();
+
+  deviceData.forEach(t => {
+    if (!uniqueDevices.has(t.serialNumber)) {
+      uniqueDevices.add(t.serialNumber);
+      result[t.serialNumber] = [] as objType[];
+    }
+  });
+
+  deviceData.forEach(t => {
+    if (result[t.serialNumber]) {
+      result[t.serialNumber].push(t);
+    }
+  });
+  
+  uniqueDevices.forEach(deviceId => {
+    const avgs = [];
+    const batteryData = result[deviceId];
+    const batteryPercentage = calculateSchoolData(batteryData);
+    avgs.push(batteryPercentage);
+  });
+};
+
+const calculateSchoolData = (deviceData: objType[]) => {
+  let prevBatteryLevel = 0;
+  let startTime = '';
+  let endTime = '';
+  let timeDiffInHours = 0;
+  let startBatteryLevel = 0;
+  let cummulativeAverage = 0;
+  let batteryDiff = 0;
+  let roundCount = 0;
+
+  deviceData.forEach((data, index) => {
+      console.log('deviceData', data.serialNumber);
+
+    const currentBatteryLevel = data.batteryLevel;
+    const currentTime = data.timestamp;
+    if (index === 0) {
+      startBatteryLevel = currentBatteryLevel;
+      startTime = currentTime;
+    }
+
+    // start calculation
+    if (index > 0) {
+      if (prevBatteryLevel >= currentBatteryLevel) {
+        // identify first and last dates
+        if (index === deviceData.length - 1) {
+          endTime = currentTime;
+          timeDiffInHours = dayjs(endTime).diff(dayjs(startTime), 'hour', true);
+          roundCount += 1;
+          batteryDiff = (startBatteryLevel - prevBatteryLevel) * 100;
+          const percentageBatteryDiff = ((conversion.value/timeDiffInHours) * batteryDiff);
+          cummulativeAverage += percentageBatteryDiff;
+        }
+      } else {
+        endTime = deviceData[index - 1].timestamp;
+        timeDiffInHours = dayjs(endTime).diff(dayjs(startTime), 'hour', true);
+
+        if (timeDiffInHours > 0) {
+          roundCount += 1;
+          batteryDiff = (startBatteryLevel - prevBatteryLevel) * 100;
+          const percentageBatteryDiff = ((conversion.value/timeDiffInHours) * batteryDiff);
+          cummulativeAverage += percentageBatteryDiff;
+        }
+
+        // reset start time and startBatteryLevel
+        startTime = currentTime;
+        startBatteryLevel = currentBatteryLevel;
+      }
+    }
+
+    prevBatteryLevel = currentBatteryLevel;
+  });
+
+  const result = cummulativeAverage/roundCount;
+  return result;
+};
+
+
+
+// const calculateDeviceData = (academyId, deviceData) => {
+//   deviceData.forEach(data => {
+
+//   });
+// };
+</script>

@@ -1,13 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router';
-
-import { env } from '@/config/env';
+import HomeView from '../views/Home.vue';
+// import { env } from '@/config/env';
 const router = createRouter({
-  history: createWebHistory(env.APP_BASE_PATH),
+  history: createWebHistory(),
   routes: [
     {
       path: '/',
-      name: 'Fe Asignment App',
-      component: () => import('../views/Home.vue')
+      name: 'FeAsignmentApp',
+      component: HomeView 
     }
   ]
 });
