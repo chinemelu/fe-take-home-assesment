@@ -38,8 +38,6 @@ const conversion = ref(24);
 const result = {} as index;
 const obj = {} as index;
 const data: objType[] =  batteryJSON.data;
-const devicesAndSchools = [];
-const overallResult = {} as index3;
 
 onMounted(() => {
   const uniqueNumbers = new Set<string>();
@@ -60,12 +58,9 @@ onMounted(() => {
   });
 
   const finalDeviceResults = {} as index2;
-  // const finalSchoolResults = {} as index2;
-
 
   uniqueNumbers.forEach(num => {
     finalDeviceResults[num] = extractDistinctDevicesFromSchools(num, obj[num]);
-    // finalSchoolResults[num] = calculateSchoolData();
   });
 
 });
@@ -86,13 +81,25 @@ const extractDistinctDevicesFromSchools = (academyId: string, deviceData: objTyp
       result[t.serialNumber].push(t);
     }
   });
-  
+
+  let badCount = 0;
+  let goodCount = 0;
+  const academyIdAndDevices = {};
+  const schoolsAndFaultyDevices = {
+    academyId: []
+  };
   uniqueDevices.forEach(deviceId => {
-    const avgs = [];
     const batteryData = result[deviceId];
     const batteryPercentage = calculateSchoolData(batteryData);
-    avgs.push(batteryPercentage);
+    if (batteryPercentage <= 30) {
+      goodCount += 1;
+    } else {
+      schoolsAndFaultyDevices[academyId] = schoolsAndFaultyDevices['academyId'].push(deviceId);
+      badCount += 1;
+    }
+    academyIdAndDevices[academyId] = { deviceSerialNumber: deviceId, goodCount, badCount };
   });
+
 };
 
 const calculateSchoolData = (deviceData: objType[]) => {
@@ -104,10 +111,9 @@ const calculateSchoolData = (deviceData: objType[]) => {
   let cummulativeAverage = 0;
   let batteryDiff = 0;
   let roundCount = 0;
+  
 
   deviceData.forEach((data, index) => {
-      console.log('deviceData', data.serialNumber);
-
     const currentBatteryLevel = data.batteryLevel;
     const currentTime = data.timestamp;
     if (index === 0) {
@@ -148,14 +154,8 @@ const calculateSchoolData = (deviceData: objType[]) => {
   });
 
   const result = cummulativeAverage/roundCount;
+
   return result;
 };
 
-
-
-// const calculateDeviceData = (academyId, deviceData) => {
-//   deviceData.forEach(data => {
-
-//   });
-// };
 </script>
