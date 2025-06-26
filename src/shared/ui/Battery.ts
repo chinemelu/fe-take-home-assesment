@@ -6,15 +6,3 @@ export interface Battery {
   'timestamp': string;
 }
 
-export interface index {
-  [key: string]: Battery[];
-}
-
-export interface index2 {
-  [key: number]: Battery[];
-}
-
-export interface index3 {
-  [key: string]: index;
-}
-

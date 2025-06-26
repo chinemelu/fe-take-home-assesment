@@ -7,141 +7,25 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
-import { Battery, index, index2 } from '../../../shared/ui/Battery';
+import { onMounted } from 'vue';
+import type { Battery } from '../../../shared/index';
 import { FileUploader } from '@/widgets/index';
-import batteryJSON from '../../../entities/batteries/config/data.json'
-import dayjs from 'dayjs';
+import { batteryConfigData } from '../../../entities/index';
+import { extractUniqueDataAndObjectFromArray } from '../../../shared/index';
+import { ACADEMYID } from '../../../shared/index';
+import { extractDistinctDevicesFromSchoolsAndCalculateData } from '../../../features/index';
 
-
-const conversion = ref(24);
-const result = {} as index;
-const obj = {} as index;
-const data: Battery[] =  batteryJSON.data;
+const batteryData: Battery[] =  batteryConfigData.data;
 
 onMounted(() => {
-  const uniqueNumbers = new Set<string>();
-
-  data.forEach(t => {
-    if (!uniqueNumbers.has(t.academyId)) {
-      uniqueNumbers.add(t.academyId);
-      obj[t.academyId] = [];
-    }
-  });
-
-  data.forEach(t => {
-    if (obj[t.academyId]) {
-      obj[t.academyId].push(t);
-    }
-  });
-
-  const finalDeviceResults = {} as index2;
-
-  uniqueNumbers.forEach(num => {
-    finalDeviceResults[num] = extractDistinctDevicesFromSchools(num, obj[num]);
+  const { extractedObject, unique } = extractUniqueDataAndObjectFromArray (batteryData, ACADEMYID);
+  const uniqueSchools = unique;
+  const uniqueSchoolsAndBatteryData = extractedObject;
+  
+  uniqueSchools.forEach(schoolId => {
+    extractDistinctDevicesFromSchoolsAndCalculateData(schoolId, uniqueSchoolsAndBatteryData[schoolId]);
   });
 
 });
-
-
-const extractDistinctDevicesFromSchools = (academyId: string, deviceData: Battery[]) => {
-  const uniqueDevices = new Set<string>();
-
-  deviceData.forEach(t => {
-    if (!uniqueDevices.has(t.serialNumber)) {
-      uniqueDevices.add(t.serialNumber);
-      result[t.serialNumber] = [] as Battery[];
-    }
-  });
-
-  deviceData.forEach(t => {
-    if (result[t.serialNumber]) {
-      result[t.serialNumber].push(t);
-    }
-  });
-
-  let badCount = 0;
-  let goodCount = 0;
-  const academyIdAndDevices = {};
-  const schoolsAndFaultyDevices = {
-    academyId: []
-  };
-  const avg =  [];
-  uniqueDevices.forEach(deviceId => {
-    const batteryData = result[deviceId];
-    const batteryPercentage = calculateSchoolData(batteryData);
-
-    avg.push({batteryPercentage, academyId, deviceId });
-    if (typeof batteryPercentage === 'number') {
-      if (batteryPercentage <= 30) {
-        goodCount += 1;
-      } else {
-        schoolsAndFaultyDevices[academyId] = schoolsAndFaultyDevices['academyId'].push(deviceId);
-        badCount += 1;
-      }
-    }
-    academyIdAndDevices[academyId] = { deviceSerialNumber: deviceId, goodCount, badCount };
-  });
-};
-
-const calculateSchoolData = (deviceData: Battery[]) => {
-  let prevBatteryLevel = 0;
-  let startTime = '';
-  let endTime = '';
-  let timeDiffInHours = 0;
-  let startBatteryLevel = 0;
-  let cummulativeAverage = 0;
-  let batteryDiff = 0;
-  let roundCount = 0;
-  let isUnknown = false;
-  // console.log('deviceData', deviceData);
-
-  deviceData.forEach((data, index) => {
-    const currentBatteryLevel = data.batteryLevel;
-    const currentTime = data.timestamp;
-    if (index === 0) {
-      startBatteryLevel = currentBatteryLevel;
-      startTime = currentTime;
-      if (deviceData.length === 1) {
-        isUnknown = true;
-      }
-    }
-
-    // start calculation
-    if (index > 0) {
-      if (prevBatteryLevel >= currentBatteryLevel) {
-        // identify first and last dates
-        if (index === deviceData.length - 1) {
-          endTime = currentTime;
-          timeDiffInHours = dayjs(endTime).diff(dayjs(startTime), 'hour', true);
-          roundCount += 1;
-          batteryDiff = (startBatteryLevel - prevBatteryLevel) * 100;
-          const percentageBatteryDiff = ((conversion.value/timeDiffInHours) * batteryDiff);
-          cummulativeAverage += percentageBatteryDiff;
-        }
-      } else {
-        endTime = deviceData[index - 1].timestamp;
-        timeDiffInHours = dayjs(endTime).diff(dayjs(startTime), 'hour', true);
-
-        if (timeDiffInHours > 0) {
-          roundCount += 1;
-          batteryDiff = (startBatteryLevel - prevBatteryLevel) * 100;
-          const percentageBatteryDiff = ((conversion.value/timeDiffInHours) * batteryDiff);
-          cummulativeAverage += percentageBatteryDiff;
-        }
-
-        // reset start time and startBatteryLevel
-        startTime = currentTime;
-        startBatteryLevel = currentBatteryLevel;
-      }
-    }
-
-    prevBatteryLevel = currentBatteryLevel;
-  });
-
-  const result = cummulativeAverage/roundCount;
-
-  return isUnknown ? 'Unknown' : result;
-};
 
 </script>
