@@ -2,10 +2,10 @@ import { VueQueryPlugin, type VueQueryPluginOptions } from '@tanstack/vue-query'
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 
-import '@/assets/styles/main.css';
+import './main.css';
 
 import App from './App.vue';
-import router from './router';
+import router from '../routes/index';
 
 import ElementPlus from 'element-plus';
 import 'element-plus/dist/index.css';

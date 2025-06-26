@@ -7,42 +7,20 @@
 </template>
 
 <script lang="ts" setup>
-interface objType {
-  'academyId':  string;
-  'batteryLevel': number;
-  'employeeId': string;
-  'serialNumber': string;
-  'timestamp': string;
-}
-
-interface index {
-  [key: string]: objType[];
-}
-
-interface index2 {
-  [key: number]: objType[];
-}
-
-interface index3 {
-  [key: string]: index;
-}
-
-
 import { onMounted, ref } from 'vue';
-import FileUploader from '@/components/FileUploader.vue';
-import batteryJSON from '../data/battery.json'
+import { Battery, index, index2 } from '../../../shared/ui/Battery';
+import { FileUploader } from '@/widgets/index';
+import batteryJSON from '../../../entities/batteries/config/data.json'
 import dayjs from 'dayjs';
 
 
 const conversion = ref(24);
 const result = {} as index;
 const obj = {} as index;
-const data: objType[] =  batteryJSON.data;
+const data: Battery[] =  batteryJSON.data;
 
 onMounted(() => {
   const uniqueNumbers = new Set<string>();
-
-  // const obj = {} as index;
 
   data.forEach(t => {
     if (!uniqueNumbers.has(t.academyId)) {
@@ -66,13 +44,13 @@ onMounted(() => {
 });
 
 
-const extractDistinctDevicesFromSchools = (academyId: string, deviceData: objType[]) => {
+const extractDistinctDevicesFromSchools = (academyId: string, deviceData: Battery[]) => {
   const uniqueDevices = new Set<string>();
 
   deviceData.forEach(t => {
     if (!uniqueDevices.has(t.serialNumber)) {
       uniqueDevices.add(t.serialNumber);
-      result[t.serialNumber] = [] as objType[];
+      result[t.serialNumber] = [] as Battery[];
     }
   });
 
@@ -104,11 +82,9 @@ const extractDistinctDevicesFromSchools = (academyId: string, deviceData: objTyp
     }
     academyIdAndDevices[academyId] = { deviceSerialNumber: deviceId, goodCount, badCount };
   });
-
-  console.log('average', avg);
 };
 
-const calculateSchoolData = (deviceData: objType[]) => {
+const calculateSchoolData = (deviceData: Battery[]) => {
   let prevBatteryLevel = 0;
   let startTime = '';
   let endTime = '';
