@@ -19,10 +19,12 @@
     "@vee-validate/zod": "^4.15.0",
     "@vueuse/core": "^12.3.0",
     "axios": "^1.7.9",
+    "babel-jest": "^30.0.2",
     "class-variance-authority": "^0.7.1",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.13",
     "element-plus": "^2.9.2",
+    "jest-environment-jsdom": "^30.0.2",
     "jsencrypt": "^3.3.2",
     "lucide-vue-next": "^0.428.0",
     "pinia": "^2.3.0",
@@ -31,6 +33,7 @@
     "query-string": "^9.1.1",
     "tailwindcss-animate": "^1.0.7",
     "tailwindcss-primeui": "^0.3.4",
+    "ts-jest": "^29.4.0",
     "vee-validate": "^4.15.0",
     "vue": "^3.5.13",
     "vue-i18n": "^11.0.1",
@@ -62,6 +65,7 @@
     "unplugin-vue-components": "^0.27.5",
     "vite": "^6.0.7",
     "vite-plugin-vue-devtools": "^7.6.8",
+    "vitest": "^3.2.4",
     "vue-tsc": "^2.2.0"
   }
 }

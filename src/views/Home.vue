@@ -88,18 +88,24 @@ const extractDistinctDevicesFromSchools = (academyId: string, deviceData: objTyp
   const schoolsAndFaultyDevices = {
     academyId: []
   };
+  const avg =  [];
   uniqueDevices.forEach(deviceId => {
     const batteryData = result[deviceId];
     const batteryPercentage = calculateSchoolData(batteryData);
-    if (batteryPercentage <= 30) {
-      goodCount += 1;
-    } else {
-      schoolsAndFaultyDevices[academyId] = schoolsAndFaultyDevices['academyId'].push(deviceId);
-      badCount += 1;
+
+    avg.push({batteryPercentage, academyId, deviceId });
+    if (typeof batteryPercentage === 'number') {
+      if (batteryPercentage <= 30) {
+        goodCount += 1;
+      } else {
+        schoolsAndFaultyDevices[academyId] = schoolsAndFaultyDevices['academyId'].push(deviceId);
+        badCount += 1;
+      }
     }
     academyIdAndDevices[academyId] = { deviceSerialNumber: deviceId, goodCount, badCount };
   });
 
+  console.log('average', avg);
 };
 
 const calculateSchoolData = (deviceData: objType[]) => {
@@ -111,7 +117,8 @@ const calculateSchoolData = (deviceData: objType[]) => {
   let cummulativeAverage = 0;
   let batteryDiff = 0;
   let roundCount = 0;
-  
+  let isUnknown = false;
+  // console.log('deviceData', deviceData);
 
   deviceData.forEach((data, index) => {
     const currentBatteryLevel = data.batteryLevel;
@@ -119,6 +126,9 @@ const calculateSchoolData = (deviceData: objType[]) => {
     if (index === 0) {
       startBatteryLevel = currentBatteryLevel;
       startTime = currentTime;
+      if (deviceData.length === 1) {
+        isUnknown = true;
+      }
     }
 
     // start calculation
@@ -155,7 +165,7 @@ const calculateSchoolData = (deviceData: objType[]) => {
 
   const result = cummulativeAverage/roundCount;
 
-  return result;
+  return isUnknown ? 'Unknown' : result;
 };
 
 </script>
