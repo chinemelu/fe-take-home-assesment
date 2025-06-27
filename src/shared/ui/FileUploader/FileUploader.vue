@@ -16,11 +16,11 @@
       <hr class="w-full border-gray-300 my-2" />
 
       <div class="py-6">
-        <input type="file" id='uploadFile1' accept=".csv, .json" class="hidden" />
+        <input type="file" id='uploadFile1' accept=".json" class="hidden" />
         <label for="uploadFile1"
           class="block px-6 py-2.5 rounded text-slate-600 text-sm tracking-wider font-semibold border-none outline-none cursor-pointer bg-gray-200 hover:bg-gray-100">Browse
           Files</label>
-        <p class="text-xs text-slate-500 mt-4">Only CSV and JSON files are Allowed.</p>
+        <p class="text-xs text-slate-500 mt-4">Only JSON files are Allowed.</p>
       </div>
     </div>
 

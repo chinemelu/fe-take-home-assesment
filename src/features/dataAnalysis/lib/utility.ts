@@ -1,7 +1,7 @@
 import  { extractUniqueDataAndObjectFromArray } from '../../../shared/index';
 import  type { Battery } from '../../../shared/index';
 import dayjs from 'dayjs';
-import { SERIALNUMBER } from '../../../shared/index';
+import { SERIALNUMBER, ACADEMYID } from '../../../shared/index';
 
 export const calculateDeviceBatteryPercentageUsage = (deviceData: Battery[]) => {
   let prevBatteryLevel = 0;
@@ -55,20 +55,27 @@ export const extractDistinctDevicesFromSchoolsAndCalculateData = (schoolId, batt
   const { extractedObject, unique } = extractUniqueDataAndObjectFromArray(batteryData, SERIALNUMBER);
   const uniqueDevices = unique;
   const uniqueDevicesAndSchoolsData = extractedObject;
-  const schoolIdAndDevices = {};
-  const schoolsAndFaultyDevices = { schoolId: [] };
+  const schoolIdAndDevices = {
+    name: '', bad_device_count: 0
+  };
+  const schoolsAndFaultyDevices = { name: '', faulty_devices: [], number_of_faulty_devices: 0 };
   let totalGoodCount = 0; let totalBadCount = 0;
   uniqueDevices.forEach(deviceId => {
     const batteryData = uniqueDevicesAndSchoolsData[deviceId];
     const averageDeviceBatteryUse = calculateDeviceBatteryPercentageUsage(batteryData);
     const { goodCount, badCount } = calculateBatteryStats(averageDeviceBatteryUse);
+    schoolsAndFaultyDevices['name'] = schoolId;
     if (goodCount) totalGoodCount += goodCount;
     if (badCount) {
       totalBadCount += badCount;  
-      schoolsAndFaultyDevices[schoolId] = schoolsAndFaultyDevices['schoolId'].push(deviceId);
+      schoolsAndFaultyDevices['faulty_devices'].push(deviceId);
+      schoolsAndFaultyDevices['number_of_faulty_devices'] += 1;
     }
   });
-  schoolIdAndDevices[schoolId] = { goodCount: totalGoodCount, badCount: totalBadCount };
+  schoolIdAndDevices['name'] = schoolId;
+  schoolIdAndDevices['bad_device_count'] = totalBadCount;
+
+  return { schoolIdAndDevices, schoolsAndFaultyDevices };
 };
 
 
@@ -102,4 +109,34 @@ export const calculateCummulativeAverage = ({ endTime, startTime, startBatteryLe
   const batteryDiff = (startBatteryLevel - prevBatteryLevel) * 100;
   const percentageBatteryDiff = ((conversionValue/timeDiffInHours) * batteryDiff);
   return cummulativeAverage + percentageBatteryDiff;
+};
+
+export const calculateBatteryData = (batteryData): { schoolIdAndDevicesArray: any, schoolsAndFaultyDevicesArray: any } => {
+  const { extractedObject, unique } = extractUniqueDataAndObjectFromArray (batteryData, ACADEMYID);
+    const uniqueSchools = unique;
+    const uniqueSchoolsAndBatteryData = extractedObject;
+    let schoolsAndFaultyDevicesArray = [];
+
+  uniqueSchools.forEach(schoolId => {
+    const { schoolIdAndDevices, schoolsAndFaultyDevices } = extractDistinctDevicesFromSchoolsAndCalculateData(schoolId, uniqueSchoolsAndBatteryData[schoolId]);
+      schoolsAndFaultyDevicesArray.push(schoolsAndFaultyDevices);
+  });
+
+  schoolsAndFaultyDevicesArray = sortArraysInDescendingOrderOfFaultyDevices(schoolsAndFaultyDevicesArray, 'number_of_faulty_devices');
+  return { schoolsAndFaultyDevicesArray };
+};
+
+
+export const sortArraysInDescendingOrderOfFaultyDevices = (array, key) => {
+  return array.sort((a, b) => {
+    const propertyA = a[key];
+    const propertyB = b[key];
+    if (propertyA < propertyB) {
+      return 1;
+    }
+    if (propertyA > propertyB) {
+      return -1;
+    }
+    return 0;
+  });
 };
