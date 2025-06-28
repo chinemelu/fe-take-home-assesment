@@ -13,6 +13,7 @@ This is a web application that, when given battery JSON data with `academyId`, `
 * Using HTTPS; copy and paste the following below on your terminal
 ```https://github.com/chinemelu/fe-take-home-assesment.git```
 * cd into the `fe-take-home-assesment` folder
+*  Enter the following command in the terminal `yarn install`. Ensure that you have a node version greater than Node 22 for this step.
 * Run `yarn dev` to start the development server
 * Copy `http://localhost:5173/`, or any local server shown on the terminal, and paste it in the browser to see the application
 * For the JSON data that will be uploaded on the application, ensure that it has the format
