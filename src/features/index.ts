@@ -3,7 +3,8 @@ export {
     extractDistinctDevicesFromSchoolsAndCalculateData,
     calculateBatteryStats,
     calculateCummulativeAverage,
-    calculateBatteryData
+    calculateBatteryData,
+    instantiateWebWorkerAndReturnChartDataViaMainThread
 } 
 from './dataAnalysis/lib/utility';
 

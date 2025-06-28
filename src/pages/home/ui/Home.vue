@@ -2,7 +2,7 @@
   <ul class="hidden text-sm font-medium text-center text-gray-500 rounded-lg shadow-sm sm:flex dark:divide-gray-700 dark:text-gray-400">
       <li class="w-full focus-within:z-10" @click="toggleComponent(FileUploadView)">
           <a href="#" 
-            class="inline-block w-full p-4 text-gray-900 bg-gray-100 border-r border-gray-200 dark:border-gray-700 rounded-s-lg focus:ring-4 focus:ring-blue-300 active focus:outline-none dark:bg-gray-700 dark:text-white" aria-current="page"
+            :class="[currentComponent === FileUploadView ? 'text-gray-900 bg-gray-100 rounded-s-lg active dark:text-white dark:bg-gray-700' : ' bg-white border-r hover:bg-gray-50 dark:hover:text-white dark:hover:bg-gray-700 dark:bg-gray-800', 'inline-block w-full p-4 border-r border-gray-200 dark:border-gray-700 focus:ring-4 focus:ring-blue-300 focus:outline-none']" :aria-current="currentComponent === FileUploadView"
           >
             File Upload
           </a>
@@ -13,7 +13,7 @@
       >
           <a 
             href="#" 
-            class="inline-block w-full p-4 bg-white border-r border-gray-200 dark:border-gray-700 hover:text-gray-700 hover:bg-gray-50 focus:ring-4 focus:ring-blue-300 focus:outline-none dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700"
+            :class="[currentComponent === SchoolsTotalFaultyDeviceTable ? 'text-gray-900 bg-gray-100 rounded-s-lg active dark:text-white dark:bg-gray-700' : ' bg-white border-r hover:bg-gray-50 dark:hover:text-white dark:hover:bg-gray-700 dark:bg-gray-800', 'inline-block w-full p-4 border-r border-gray-200 dark:border-gray-700 focus:ring-4 focus:ring-blue-300 focus:outline-none']" :aria-current="currentComponent === SchoolsTotalFaultyDeviceTable"
           >
             School Data Chart
           </a>
@@ -24,7 +24,7 @@
       >
           <a 
             href="#" 
-            class="inline-block w-full p-4 bg-white border-r border-gray-200 dark:border-gray-700 hover:text-gray-700 hover:bg-gray-50 focus:ring-4 focus:ring-blue-300 focus:outline-none dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700"
+            :class="[currentComponent === FaultyDeviceTable ? 'text-gray-900 bg-gray-100 rounded-s-lg active dark:text-white dark:bg-gray-700' : ' bg-white border-r hover:bg-gray-50 dark:hover:text-white dark:hover:bg-gray-700 dark:bg-gray-800', 'inline-block w-full p-4 border-r border-gray-200 dark:border-gray-700 focus:ring-4 focus:ring-blue-300 focus:outline-none']" :aria-current="currentComponent === FaultyDeviceTable"
           >
             Faulty Device Table
           </a>
@@ -35,17 +35,23 @@
     <component 
       :is="currentComponent" 
       :chartData="chartData"
+      @clear-chart-data="chartData = []"
+      @update-processing-state="(value: boolean) => isProcessingComplete = value"
+      @file-processing="setSelectedFile"
+      :isLoading="isLoading"
+      :alertType="alertType"
+      :alertMessage="alertMessage"
+      :showAlert="showAlert"
+      @set-alert-state="(value: boolean) => showAlert = value"
+      :isProcessingComplete="isProcessingComplete"
     />
   </transition>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref, shallowRef } from 'vue';
-import type { Battery } from '../../../shared/index';
-import { batteryConfigData, isValidBatteryJSONData } from '../../../entities/index';
-import { DATA_ANALYSIS_WORKER_FILE } from '../../../shared/index';
-import { calculateBatteryData } from '../../../features/index';
-import { instantiateWebWorker } from '../../../shared/index';
+import { ref, shallowRef } from 'vue';
+import { instantiateWebWorker, DATA_ANALYSIS_WORKER_FILE } from '../../../shared/index';
+import { instantiateWebWorkerAndReturnChartDataViaMainThread } from '../../../features/index';
 import { defineAsyncComponent } from 'vue';
 
 const FaultyDeviceTable = defineAsyncComponent(() =>
@@ -60,9 +66,12 @@ const SchoolsTotalFaultyDeviceTable = defineAsyncComponent(() =>
   import('../../../features/ui/SchoolsTotalFaultyDevices.vue')
 );
 
-const batteryData: { data: Battery[] } =  batteryConfigData;
 const isLoading = ref(false);
+const isProcessingComplete = ref(false);
 const chartData = ref([]);
+const alertType = ref('success');
+const alertMessage = ref('');
+const showAlert = ref(false);
 
 const currentComponent = shallowRef(FileUploadView);
 
@@ -71,41 +80,62 @@ const toggleComponent = (component) => {
   currentComponent.value = component;
 };
 
-onMounted(() => {
-  const worker = instantiateWebWorker(DATA_ANALYSIS_WORKER_FILE);
 
-  if (worker) {
+const setSelectedFile = (fileContent: { data: battery[] }) => {
+  try {
     isLoading.value = true;
+    const batteryData = JSON.parse(fileContent);
 
-    worker.postMessage(batteryData);
+    const worker = instantiateWebWorker(DATA_ANALYSIS_WORKER_FILE);
+    
+    if (worker) {
+      worker.postMessage(batteryData);
+      worker.onmessage = (event) => {
+        const { isValidBatteryJSON, schoolsAndFaultyDevicesArray } = event.data;    
+        worker.terminate();
 
-    worker.onmessage = (event) => {
-      const { isValidBatteryJSON, schoolsAndFaultyDevicesArray } = event.data;
+        if (isValidBatteryJSON) {
+          isLoading.value = false;
+          isProcessingComplete.value = true;
+          alertType.value = 'success';
+          alertMessage.value = 'The JSON Data has been processed successfully. Check the tables for the results';
+          showAlert.value = true;
+        } else {
+          alertType.value = 'error';
+          alertMessage.value = 'The JSON data is invalid. It must be a JSON with a data property. Check that all the properties are present in all the datasets';
+          showAlert.value = true;
+          isLoading.value = false;
+        }
 
-      if (isValidBatteryJSON) {
         chartData.value = schoolsAndFaultyDevicesArray;
+      };
+      
+      worker.onerror = function(e){
+        throw new Error(e.message + ' (' + e.filename + ':' + e.lineno + ')');
+      };
+    } else {
+      const { isValidBatteryJSON, schoolsAndFaultyDevicesArray } = instantiateWebWorkerAndReturnChartDataViaMainThread(batteryData);
+      if (isValidBatteryJSON) {
+        isLoading.value = false;
+        isProcessingComplete.value = true;
+        alertType.value = 'success';
+        alertMessage.value = 'The JSON Data has been processed successfully. Check the tables for the results';
+        showAlert.value = true;
       } else {
-        console.log('invalid data');
+          alertType.value = 'error';
+          alertMessage.value = 'The JSON data is invalid. It must be a JSON with a data property. Check that all the properties are present in all the dataset';
+          showAlert.value = true;
+          isLoading.value = false;
       }
-      worker.terminate();
-      isLoading.value = false;
-    };
 
-    worker.onerror = function(e){
-      throw new Error(e.message + ' (' + e.filename + ':' + e.lineno + ')');
-    };
-  } else { 
-    isLoading.value = true;
-    const isValidJSONData = isValidBatteryJSONData(batteryData);
-
-    if (isValidJSONData) {
-      const { schoolsAndFaultyDevicesArray } = calculateBatteryData(batteryData.data);
       chartData.value = schoolsAndFaultyDevicesArray;
     }
-    isLoading.value = false;
+  } catch(error) {
+    alertType.value = 'error';
+    alertMessage.value = error;
+    showAlert.value = true;
   }
-
-});
+};
 
 </script>
 

@@ -16,7 +16,7 @@
       <hr class="w-full border-gray-300 my-2" />
 
       <div class="py-6">
-        <input type="file" id='uploadFile1' accept=".json" class="hidden" />
+        <input @click="(e: Event) => emit('click', e)" @change="(e: Event) => emit('change', e)" type="file" id='uploadFile1' accept=".json" class="hidden" />
         <label for="uploadFile1"
           class="block px-6 py-2.5 rounded text-slate-600 text-sm tracking-wider font-semibold border-none outline-none cursor-pointer bg-gray-200 hover:bg-gray-100">Browse
           Files</label>
@@ -29,5 +29,7 @@
 
 
 <script lang="ts" setup>
+const emit = defineEmits(['change', 'click']);
+
 
 </script>

@@ -1,7 +1,9 @@
-import  { extractUniqueDataAndObjectFromArray } from '../../../shared/index';
+import  { extractUniqueDataAndObjectFromArray, instantiateWebWorker } from '../../../shared/index';
 import  type { Battery } from '../../../shared/index';
 import dayjs from 'dayjs';
-import { SERIALNUMBER, ACADEMYID } from '../../../shared/index';
+import { SERIALNUMBER, ACADEMYID, DATA_ANALYSIS_WORKER_FILE } from '../../../shared/index';
+import { isValidBatteryJSONData } from '../../../entities/index';
+
 
 export const calculateDeviceBatteryPercentageUsage = (deviceData: Battery[]) => {
   let prevBatteryLevel = 0;
@@ -139,4 +141,28 @@ export const sortArraysInDescendingOrderOfFaultyDevices = (array, key) => {
     }
     return 0;
   });
+};
+
+export const instantiateWebWorkerAndReturnChartData = (batteryData) => {
+  const worker = instantiateWebWorker(DATA_ANALYSIS_WORKER_FILE);
+  if (worker) {
+    const {isValidBatteryJSON, schoolsAndFaultyDevicesArray } =  instantiateWebWorkerAndReturnChartDataViaWebWorkers(worker, batteryData, callbackWHenWorkerMessageIsDone);
+    return { isValidBatteryJSON, schoolsAndFaultyDevicesArray };
+  } else { 
+    const {isValidBatteryJSON, schoolsAndFaultyDevicesArray } = instantiateWebWorkerAndReturnChartDataViaMainThread(batteryData);
+    return { isValidBatteryJSON, schoolsAndFaultyDevicesArray };
+  }
+};
+
+const instantiateWebWorkerAndReturnChartDataViaWebWorkers = (worker: Worker, batteryData, cb) => {
+    
+};
+
+export const instantiateWebWorkerAndReturnChartDataViaMainThread = (batteryData) => {
+    const isValidBatteryJSON = isValidBatteryJSONData(batteryData);
+
+    if (isValidBatteryJSON) {
+      const { schoolsAndFaultyDevicesArray } = calculateBatteryData(batteryData.data);
+      return { isValidBatteryJSON, schoolsAndFaultyDevicesArray };
+    }
 };

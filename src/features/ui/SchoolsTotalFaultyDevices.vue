@@ -1,14 +1,14 @@
 <template>
     <div class="relative overflow-x-auto mt-12">
-    <h1 class="text-3xl mb-8 text-center font-medium">Schools and Total Faulty Devices</h1>        
-        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+    <h1 class="text-3xl mb-8 text-center font-medium" v-if="chartData?.length > 0">Schools and Total Faulty Devices</h1>        
+        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400" v-if="chartData?.length > 0">
             <thead class="text-sm text-gray-700 uppercase bg-gray-50 text-center dark:bg-gray-700 dark:text-gray-400">
                 <tr>
                     <th scope="col" class="px-6 py-3">
                         S/N
                     </th>
                     <th scope="col" class="px-6 py-3">
-                        SchoolID
+                        School ID
                     </th>
                     <th scope="col" class="px-6 py-3 font-bold">
                         Number of Faulty Devices
@@ -29,11 +29,17 @@
                 </tr>
             </tbody>
         </table>
+        <div v-else class="text-center w-full">
+            <h3 class="text-xl font-bold text-center">There is no data here. Upload a JSON file for processing</h3>
+            <img class="inline" :src="emptyState" style="width: 400px; height: 400px; object-fit: cover" alt="no-data"/>
+        </div>
     </div>
 </template>
 
 
 <script setup lang="ts">
+    import { emptyState } from '../../shared/index';
+
     const props = defineProps<({
         chartData: {
             type: Array<{
