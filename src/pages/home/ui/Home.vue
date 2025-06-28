@@ -31,7 +31,7 @@
       </li>
   </ul>
   
-  <transition name="fade">
+  <Transition name="fade" mode="out-in">
     <component 
       :is="currentComponent" 
       :chartData="chartData"
@@ -45,7 +45,7 @@
       @set-alert-state="(value: boolean) => showAlert = value"
       :isProcessingComplete="isProcessingComplete"
     />
-  </transition>
+  </Transition>
 </template>
 
 <script lang="ts" setup>
